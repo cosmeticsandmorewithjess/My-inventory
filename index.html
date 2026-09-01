@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap');
+
+  :root {
+    --bg: #F6F4EE;
+    --surface: #FFFFFF;
+    --ink: #23261F;
+    --muted: #6B6E63;
+    --border: #DEDACE;
+    --accent: #2F5233;
+    --accent-light: #E4EBDF;
+    --danger: #A13D2B;
+    --danger-light: #F4E5E1;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 20px 16px 80px;
+  }
+
+  header {
+    margin-bottom: 20px;
+  }
+
+  .biz-name {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 26px;
+    border: none;
+    background: transparent;
+    color: var(--ink);
+    padding: 0;
+    width: 100%;
+    outline: none;
+  }
+  .biz-name::placeholder { color: #B7B4A6; }
+
+  .subtitle { color: var(--muted); font-size: 13px; margin-top: 2px; }
+
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin: 18px 0;
+  }
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+  }
+  .stat .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+  .stat .value { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-top: 2px; }
+  .stat.warn .value { color: var(--danger); }
+
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  input[type="text"], select, input[type="number"] {
+    font-family: 'Inter', sans-serif;
+    font-size: 15px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink);
+    width: 100%;
+    outline: none;
+  }
+  input[type="text"]:focus, select:focus, input[type="number"]:focus {
+    border-color: var(--accent);
+  }
+  .search { flex: 1; }
+
+  button {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    cursor: pointer;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--ink);
+    padding: 10px 14px;
+  }
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    white-space: nowrap;
+  }
+  button.text {
+    border: none;
+    background: none;
+    padding: 4px 6px;
+    color: var(--muted);
+    font-size: 13px;
+  }
+  button.text.danger { color: var(--danger); }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .panel.open { display: block; }
+  .panel h3 { margin: 0 0 12px; font-family: 'Fraunces', serif; font-weight: 600; font-size: 17px; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .panel-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .err { color: var(--danger); font-size: 12px; margin-top: 4px; display: none; }
+
+  .list { display: flex; flex-direction: column; gap: 8px; }
+  .item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .item.low { border-color: var(--danger); background: var(--danger-light); }
+  .item-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .item-name { font-weight: 600; font-size: 15px; }
+  .item-meta { color: var(--muted); font-size: 12px; margin-top: 2px; }
+  .item-cat {
+    display: inline-block;
+    font-size: 11px;
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+  .item-nums { text-align: right; font-size: 13px; }
+  .item-nums .qty { font-weight: 600; }
+  .item-nums .low-flag { color: var(--danger); font-size: 11px; font-weight: 600; margin-top: 2px; }
+  .item-actions { display: flex; gap: 4px; margin-top: 8px; justify-content: flex-end; }
+
+  .empty {
+    text-align: center;
+    color: var(--muted);
+    padding: 40px 16px;
+    font-size: 14px;
+  }
+  .empty .big { font-family: 'Fraunces', serif; font-size: 18px; color: var(--ink); margin-bottom: 6px; }
+
+  .scan-panel {
+    background: var(--surface);
+    border: 2px solid var(--accent);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+  }
+  .scan-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .scan-row label {
+    font-size: 12px;
+    color: var(--muted);
+    font-weight: 500;
+  }
+  .scan-mode { display: flex; gap: 6px; }
+  .mode-btn {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 20px;
+  }
+  .mode-btn.active {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  #scanInput {
+    font-size: 17px;
+    text-align: center;
+    letter-spacing: 0.02em;
+  }
+  .scan-feed {
+    margin-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 110px;
+    overflow-y: auto;
+  }
+  .scan-line {
+    font-size: 12px;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+  .scan-line.ok .amt { color: var(--accent); font-weight: 600; }
+  .scan-line.new .amt { color: var(--danger); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <input class="biz-name" id="bizName" type="text" placeholder="Your business name" />
+    <div class="subtitle">Inventory <span id="autoSavedFlag" style="opacity:0; transition: opacity 0.3s; color: var(--accent); font-weight: 600;">✓ backed up to clipboard</span></div>
+  </header>
+
+  <div class="stats">
+    <div class="stat">
+      <div class="label">Items</div>
+      <div class="value" id="statCount">0</div>
+    </div>
+    <div class="stat">
+      <div class="label">Total value</div>
+      <div class="value" id="statValue">$0</div>
+    </div>
+    <div class="stat warn">
+      <div class="label">Low stock</div>
+      <div class="value" id="statLow">0</div>
+    </div>
+  </div>
+
+  <div class="scan-panel" id="scanPanel">
+    <div class="scan-row">
+      <label for="scanInput">Scan barcode</label>
+      <div class="scan-mode">
+        <button type="button" class="mode-btn active" id="modeIn" data-mode="in">Receiving +</button>
+        <button type="button" class="mode-btn" id="modeOut" data-mode="out">Shipping −</button>
+      </div>
+    </div>
+    <input type="text" id="scanInput" placeholder="Tap here, then scan" autocomplete="off" />
+    <div class="scan-feed" id="scanFeed"></div>
+  </div>
+
+  <div class="toolbar">
+    <input class="search" id="search" type="text" placeholder="Search items or SKU" />
+    <button class="primary" id="addBtn">Add item</button>
+  </div>
+
+  <div class="toolbar" style="margin-top:-6px;">
+    <button id="exportBtn" style="flex:1;">Copy backup</button>
+    <button id="importBtn" style="flex:1;">Restore backup</button>
+  </div>
+  <div class="subtitle" style="margin: 6px 0 14px;">This app doesn't auto-save between sessions. Tap "Copy backup" and paste it somewhere safe (like Notes) before you close the app, then paste it back in with "Restore backup" next time.</div>
+
+  <div class="panel" id="backupPanel">
+    <h3 id="backupTitle">Copy backup</h3>
+    <textarea id="backupText" rows="6" style="width:100%; font-family: monospace; font-size: 12px; border: 1px solid var(--border); border-radius: 8px; padding: 10px;"></textarea>
+    <div class="panel-actions">
+      <button class="primary" id="backupActionBtn">Copy to clipboard</button>
+      <button id="backupCancelBtn">Close</button>
+    </div>
+  </div>
+
+  <div class="panel" id="panel">
+    <h3 id="panelTitle">Add item</h3>
+    <div class="field">
+      <label>Item name</label>
+      <input type="text" id="fName" placeholder="e.g. Ceramic mug, 12oz" />
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>SKU</label>
+        <input type="text" id="fSku" placeholder="MUG-12-BLU" />
+      </div>
+      <div class="field">
+        <label>Category</label>
+        <input type="text" id="fCategory" placeholder="Drinkware" />
+      </div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Quantity on hand</label>
+        <input type="number" id="fQty" placeholder="0" min="0" />
+      </div>
+      <div class="field">
+        <label>Unit price ($)</label>
+        <input type="number" id="fPrice" placeholder="0.00" min="0" step="0.01" />
+      </div>
+    </div>
+    <div class="field">
+      <label>Reorder threshold</label>
+      <input type="number" id="fReorder" placeholder="e.g. 5" min="0" />
+    </div>
+    <div class="field">
+      <label>Notes</label>
+      <input type="text" id="fNotes" placeholder="Supplier, location, etc." />
+    </div>
+    <div class="err" id="formErr">Enter an item name and quantity.</div>
+    <div class="panel-actions">
+      <button class="primary" id="saveBtn">Save item</button>
+      <button id="cancelBtn">Cancel</button>
+    </div>
+  </div>
+
+  <div class="list" id="list"></div>
+</div>
+
+<script>
+  let items = [];
+  let editingId = null;
+
+  const $ = (id) => document.getElementById(id);
+  const fmtMoney = (n) => '$' + Number(n).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  $('bizName').addEventListener('blur', autoBackupToClipboard);
+
+  function loadData() {
+    render();
+  }
+
+  function saveItems() {
+    render();
+    autoBackupToClipboard();
+    return true;
+  }
+
+  async function autoBackupToClipboard() {
+    try {
+      const payload = {
+        businessName: $('bizName').value,
+        items,
+        exportedAt: new Date().toISOString(),
+      };
+      await navigator.clipboard.writeText(JSON.stringify(payload));
+      flashAutoSaved();
+    } catch (err) {
+      // Clipboard write can silently fail outside a direct user gesture; not fatal.
+    }
+  }
+
+  function flashAutoSaved() {
+    const el = $('autoSavedFlag');
+    if (!el) return;
+    el.style.opacity = '1';
+    clearTimeout(flashAutoSaved._t);
+    flashAutoSaved._t = setTimeout(() => { el.style.opacity = '0'; }, 900);
+  }
+
+  let backupMode = 'export';
+
+  $('exportBtn').addEventListener('click', () => {
+    backupMode = 'export';
+    const payload = {
+      businessName: $('bizName').value,
+      items,
+      exportedAt: new Date().toISOString(),
+    };
+    $('backupTitle').textContent = 'Copy backup';
+    $('backupActionBtn').textContent = 'Copy to clipboard';
+    $('backupText').value = JSON.stringify(payload);
+    $('backupPanel').classList.add('open');
+    $('backupText').focus();
+    $('backupText').select();
+  });
+
+  $('importBtn').addEventListener('click', () => {
+    backupMode = 'import';
+    $('backupTitle').textContent = 'Restore backup';
+    $('backupActionBtn').textContent = 'Restore';
+    $('backupText').value = '';
+    $('backupPanel').classList.add('open');
+    $('backupText').focus();
+  });
+
+  $('backupCancelBtn').addEventListener('click', () => {
+    $('backupPanel').classList.remove('open');
+  });
+
+  $('backupActionBtn').addEventListener('click', async () => {
+    if (backupMode === 'export') {
+      $('backupText').select();
+      try {
+        await navigator.clipboard.writeText($('backupText').value);
+        $('backupActionBtn').textContent = 'Copied!';
+        setTimeout(() => { $('backupActionBtn').textContent = 'Copy to clipboard'; }, 1500);
+      } catch (err) {
+        alert("Couldn't auto-copy — the text is selected, so use your keyboard's Copy option instead.");
+      }
+    } else {
+      try {
+        const payload = JSON.parse($('backupText').value.trim());
+        if (!Array.isArray(payload.items)) throw new Error('bad format');
+        items = payload.items;
+        $('bizName').value = payload.businessName || '';
+        render();
+        $('backupPanel').classList.remove('open');
+      } catch (err) {
+        alert("That doesn't look like a valid backup. Paste the exact text you copied earlier.");
+      }
+    }
+  });
+
+  let scanMode = 'in';
+  const scanFeed = [];
+
+  $('modeIn').addEventListener('click', () => setScanMode('in'));
+  $('modeOut').addEventListener('click', () => setScanMode('out'));
+
+  function setScanMode(mode) {
+    scanMode = mode;
+    $('modeIn').classList.toggle('active', mode === 'in');
+    $('modeOut').classList.toggle('active', mode === 'out');
+    $('scanInput').focus();
+  }
+
+  function refocusScan() {
+    const active = document.activeElement;
+    const panelOpen = $('panel').classList.contains('open');
+    const backupOpen = $('backupPanel').classList.contains('open');
+    const typingElsewhere = active && active !== $('scanInput') && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA');
+    if (active !== $('scanInput') && !panelOpen && !backupOpen && !typingElsewhere) {
+      $('scanInput').focus();
+    }
+  }
+  setInterval(refocusScan, 1500);
+  window.addEventListener('load', () => $('scanInput').focus());
+
+  function logScan(text, cls) {
+    scanFeed.unshift({ text, cls });
+    scanFeed.length = Math.min(scanFeed.length, 6);
+    $('scanFeed').innerHTML = scanFeed
+      .map((s) => `<div class="scan-line ${s.cls}">${s.text}</div>`)
+      .join('');
+  }
+
+  $('scanInput').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    e.preventDefault();
+    const code = $('scanInput').value.trim();
+    $('scanInput').value = '';
+    if (!code) return;
+    handleScan(code);
+  });
+
+  function handleScan(code) {
+    const match = items.find((i) => i.sku && i.sku.toLowerCase() === code.toLowerCase());
+    if (!match) {
+      logScan(`New code ${code} — add it below`, 'new');
+      openPanel(null);
+      $('fSku').value = code;
+      return;
+    }
+    const delta = scanMode === 'in' ? 1 : -1;
+    match.qty = Math.max(0, match.qty + delta);
+    saveItems();
+    logScan(`${match.name} <span class="amt">${delta > 0 ? '+1' : '-1'} → ${match.qty}</span>`, 'ok');
+  }
+
+  function openPanel(item) {
+    editingId = item ? item.id : null;
+    $('panelTitle').textContent = item ? 'Edit item' : 'Add item';
+    $('fName').value = item ? item.name : '';
+    $('fSku').value = item ? item.sku : '';
+    $('fCategory').value = item ? item.category : '';
+    $('fQty').value = item ? item.qty : '';
+    $('fPrice').value = item ? item.price : '';
+    $('fReorder').value = item ? item.reorder : '';
+    $('fNotes').value = item ? item.notes : '';
+    $('formErr').style.display = 'none';
+    $('panel').classList.add('open');
+    $('fName').focus();
+  }
+
+  function closePanel() {
+    $('panel').classList.remove('open');
+    editingId = null;
+    setTimeout(() => $('scanInput').focus(), 50);
+  }
+
+  $('addBtn').addEventListener('click', () => openPanel(null));
+  $('cancelBtn').addEventListener('click', closePanel);
+
+  $('saveBtn').addEventListener('click', async () => {
+    const name = $('fName').value.trim();
+    const qty = $('fQty').value;
+    if (!name || qty === '' || Number(qty) < 0) {
+      $('formErr').style.display = 'block';
+      return;
+    }
+    const data = {
+      name,
+      sku: $('fSku').value.trim(),
+      category: $('fCategory').value.trim(),
+      qty: Number(qty),
+      price: Number($('fPrice').value) || 0,
+      reorder: $('fReorder').value === '' ? 0 : Number($('fReorder').value),
+      notes: $('fNotes').value.trim(),
+    };
+    if (editingId) {
+      const idx = items.findIndex((i) => i.id === editingId);
+      if (idx !== -1) items[idx] = { ...items[idx], ...data };
+    } else {
+      items.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), ...data });
+    }
+    saveItems();
+    closePanel();
+  });
+
+  function deleteItem(id) {
+    items = items.filter((i) => i.id !== id);
+    saveItems();
+  }
+
+  $('search').addEventListener('input', render);
+
+  function render() {
+    const q = $('search').value.trim().toLowerCase();
+    const filtered = items.filter((i) =>
+      !q || i.name.toLowerCase().includes(q) || (i.sku || '').toLowerCase().includes(q) || (i.category || '').toLowerCase().includes(q)
+    );
+
+    const totalValue = items.reduce((sum, i) => sum + i.qty * i.price, 0);
+    const lowCount = items.filter((i) => i.reorder > 0 && i.qty <= i.reorder).length;
+    $('statCount').textContent = items.length;
+    $('statValue').textContent = fmtMoney(totalValue);
+    $('statLow').textContent = lowCount;
+
+    const list = $('list');
+    list.innerHTML = '';
+
+    if (items.length === 0) {
+      list.innerHTML = '<div class="empty"><div class="big">No items yet</div>Add your first item to start tracking stock.</div>';
+      return;
+    }
+    if (filtered.length === 0) {
+      list.innerHTML = '<div class="empty">No items match your search.</div>';
+      return;
+    }
+
+    filtered
+      .slice()
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .forEach((i) => {
+        const isLow = i.reorder > 0 && i.qty <= i.reorder;
+        const el = document.createElement('div');
+        el.className = 'item' + (isLow ? ' low' : '');
+        el.innerHTML = `
+          <div class="item-top">
+            <div>
+              <div class="item-name"></div>
+              <div class="item-meta"></div>
+              <div class="item-cat" style="${i.category ? '' : 'display:none;'}"></div>
+            </div>
+            <div class="item-nums">
+              <div class="qty"></div>
+              <div class="item-meta"></div>
+              <div class="low-flag" style="${isLow ? '' : 'display:none;'}">Reorder soon</div>
+            </div>
+          </div>
+          <div class="item-actions">
+            <button class="text edit-btn">Edit</button>
+            <button class="text danger del-btn">Delete</button>
+          </div>
+        `;
+        el.querySelector('.item-name').textContent = i.name;
+        el.querySelector('.item-meta').textContent = i.sku || 'No SKU';
+        if (i.category) el.querySelector('.item-cat').textContent = i.category;
+        el.querySelectorAll('.item-nums .qty')[0].textContent = i.qty + ' in stock';
+        el.querySelectorAll('.item-nums .item-meta')[0].textContent = fmtMoney(i.price) + ' ea · ' + fmtMoney(i.qty * i.price);
+        el.querySelector('.edit-btn').addEventListener('click', () => openPanel(i));
+        el.querySelector('.del-btn').addEventListener('click', () => deleteItem(i.id));
+        list.appendChild(el);
+      });
+  }
+
+  loadData();
+</script>
+</body>
+</html>
